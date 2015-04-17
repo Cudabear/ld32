@@ -1,0 +1,70 @@
+<html>
+<head>
+    <title>LD32: ?????????????</title>
+    
+    <!--StarChaser stylesheets -->
+    <style type="text/css">
+        body { padding: 0; margin: 0; background-color: black; background-image: url('res/img/wrapper/smudges.jpg');}
+        a { color: white; }
+        a:hover {color: #BBB;}
+
+        .fence-post { width: 15px; background-color: black; background-image: url('res/img/wrapper/fencepost.png'); height: 100%; position: absolute; top:0;}
+
+        .horizontal-fence-post{ width: 100%; height: 15px; background-color: black; background-image: url('res/img/wrapper/fencepost-horizontal.png');}
+
+        #footer{border-top: 3px solid #333; line-height: 35px; height: 35px; color: white; width: 100%; background: transparent; padding:5px 20px; box-sizing: border-box; background-image: url('res/img/wrapper/grid.jpg');}
+        #footer #text { float:left;}
+        #footer #powered_text {float: right; padding-right: 10px;}
+        #footer #img {height: 35px; float: right;}
+        #footer #img img { height: 35px;}
+
+        #game-wrapper { border: 3px solid #333; border-top-width: 0px; border-bottom-width: 0px; 
+            margin-left: auto; margin-right: auto; width: 1040px; height: 630px; background-color: black; background-image: url('res/img/wrapper/fencepost.png');}
+        #game { margin-left: auto; margin-right: auto; width: 1040px; height:630px; overflow-y: hidden; }
+        #game-blocker { font-family: cursive; width: 1040px; height:630px; background-color: #121212; position: absolute;}
+        #game-blocker img {margin-left: auto; margin-right: auto; display: block;}
+        #game-blocker p {color: white; font-size: 36;}
+        .label { font-family: cursive; position: absolute; font-size: 10;}
+    </style>
+
+    <!-- font family import -->
+   
+
+    <!-- LD32 javascript library files -->
+    <script type="text/javascript" src ="lib/jquery/jquery.js"></script>
+    <script type="text/javascript" src ="lib/phaser/phaser.js"></script>
+
+    <!-- LD32 javascripts project files -->
+</head>
+<body>
+    <div style="background-color: black; background-image: url('res/img/wrapper/fence.png');">
+        <div id="game-wrapper">
+            <div id="game">
+
+            </div>
+        </div>
+    </div>
+
+    <div id="footer"> 
+        <div id="text">
+            <span>Created by Cudabear for Ludum Dare #32: ??????.  Do not Redistribute without Permission.  Looking for the main website?
+                <a href="..">Click Here!</a>
+            </span>
+        </div>
+        
+        <div id="img">  
+            <span><a href="https://github.com/photonstorm/phaser"><img src="res/img/wrapper/phaser-logo-small.png"></a></span>
+        </div>
+
+        <div id="powered_text">
+            <span> Powered by </span>
+        </div>
+    </div>
+    <!-- <div class="horizontal-fence-post"></div> -->
+
+    <div class="fence-post" style="right: 0;"></div>
+    <div class="fence-post" style="left: 0;"></div>
+
+    <script type="text/javascript" src="app.js"></script>
+</body>
+</html>
