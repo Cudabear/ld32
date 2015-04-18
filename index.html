@@ -19,9 +19,9 @@
         #footer #img img { height: 35px;}
 
         #game-wrapper { border: 3px solid #333; border-top-width: 0px; border-bottom-width: 0px; 
-            margin-left: auto; margin-right: auto; width: 1040px; height: 630px; background-color: black; background-image: url('res/img/wrapper/fencepost.png');}
-        #game { margin-left: auto; margin-right: auto; width: 1040px; height:630px; overflow-y: hidden; }
-        #game-blocker { font-family: cursive; width: 1040px; height:630px; background-color: #121212; position: absolute;}
+            margin-left: auto; margin-right: auto; width: 960px; height: 640px; background-color: black; background-image: url('res/img/wrapper/fencepost.png');}
+        #game { margin-left: auto; margin-right: auto; width: 960px; height:640px; overflow-y: hidden; }
+        #game-blocker { font-family: cursive; width: 960px; height:640px; background-color: #121212; position: absolute;}
         #game-blocker img {margin-left: auto; margin-right: auto; display: block;}
         #game-blocker p {color: white; font-size: 36;}
         .label { font-family: cursive; position: absolute; font-size: 10;}
@@ -31,10 +31,15 @@
    
 
     <!-- LD32 javascript library files -->
-    <script type="text/javascript" src ="lib/jquery/jquery.js"></script>
-    <script type="text/javascript" src ="lib/phaser/phaser.js"></script>
+    <script type="text/javascript" src="lib/jquery/jquery.js"></script>
+    <script type="text/javascript" src="lib/phaser/phaser.js"></script>
 
     <!-- LD32 javascripts project files -->
+    <script type="text/javascript" src="src/Character.js"></script>
+    <script type="text/javascript" src="src/Enemy.js"></script>
+    <script type="text/javascript" src="src/FriendAI.js"></script>
+    <script type="text/javascript" src="src/EnemyAI.js"></script>
+    <script type="text/javascript" src="src/UI.js"></script>
 </head>
 <body>
     <div style="background-color: black; background-image: url('res/img/wrapper/fence.png');">
