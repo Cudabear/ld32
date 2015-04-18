@@ -3,7 +3,7 @@ FriendAI = {
 	separationWeight: 2,
 	alignmentWeight: 1,
 	cohesionWeight: 1,
-	desiredSeparation: 80,
+	desiredSeparation: 40,
 
 	//call every frame to determine new velocity
 	boid: function(me, friends){
@@ -12,17 +12,47 @@ FriendAI = {
 		me.sprite.body.velocity.x += accelerationVec.x;
 		me.sprite.body.velocity.y += accelerationVec.y;
 
+		// var dx = 0;
+		// var dy = 0;
+		// if(me.logic.idealPath.length > 0){
+		// 	var whereToGo = me.logic.idealPath[me.logic.idealPathIndex];
+		// 	var dx = whereToGo.x*64+32 - me.sprite.x;
+		// 	var dy = whereToGo.y*64+32 - me.sprite.y;
+		// 	var d = Math.sqrt(dx*dx + dy*dy);
+	
+		// 	//if we get within 32px, increment and go to the next one!
+		// 	if(d <= 64){
+		// 		if(me.logic.idealPathIndex + 1 < me.logic.idealPath.length){
+		// 			me.logic.idealPathIndex++;
+		// 		}
+		// 	}
+		// }
+
+
 		if(me.sprite.body.velocity.x > me.vitals.speed){
 			me.sprite.body.velocity.x = me.vitals.speed;
 		}else if(me.sprite.body.velocity.x < -me.vitals.speed){
 			me.sprite.body.velocity.x = -me.vitals.speed;
 		}
 
+		// if(dx < 0 && me.sprite.body.velocity.x > 0 || dx > 0 && me.sprite.body.velocity.x < 0){
+		// 	me.sprite.body.velocity.x *= -1;
+		// }
+
 		if(me.sprite.body.velocity.y > me.vitals.speed){
 			me.sprite.body.velocity.y = me.vitals.speed;
 		}else if(me.sprite.body.velocity.y < -me.vitals.speed){
 			me.sprite.body.velocity.y = -me.vitals.speed;
 		}
+
+		// if(dy < 0 && me.sprite.body.velocity.y > 0 || dy > 0 && me.sprite.body.velocity.y < 0){
+		// 	me.sprite.body.velocity.y *= -1;
+		// }
+
+		// if(!me.logic.movementGoal && accelerationVec.x === 0 && accelerationVec.y === 0){
+		// 	me.sprite.body.velocity.x = 0;
+		// 	me.sprite.body.velocity.y = 0;
+		// }
 	},
 
 	boidFlock: function(me, friends){
@@ -59,6 +89,54 @@ FriendAI = {
 				count++;
 			}
 		},this);
+		
+
+		for(var i = powerups.length - 1; i >= 0; i--){
+			var powerup = powerups[i];
+			var dx = me.sprite.x - powerup.x;
+			var dy = me.sprite.y - powerup.y;
+			var d = Math.sqrt(dx*dx +dy*dy);
+			
+			if(powerup.name === "healthpack"){
+				if(me.vitals.health < me.vitals.maxHealth*0.33){
+					if(d > 0){ //we REALLY want health
+						sum.x += powerup.x *50;
+						sum.y += powerup.y *50;
+
+						count += 50;
+					}
+
+					if(d <= 64){
+						me.vitals.health = me.vitals.maxHealth;
+						powerup.uses--;
+
+						if(powerup.uses < 1){
+							powerup.destroy();
+							powerups.splice(i, 1);
+						}
+					}
+				}
+			}else if(powerup.name === "ammopack"){ //prioritize health
+				if(me.vitals.ammo < me.vitals.maxAmmo*0.33){
+					if(d > 0){ //we want ammo a bit
+						sum.x += powerup.x *3;
+						sum.y += powerup.y *3;
+
+						count += 3;
+					}
+
+					if(d < 16){
+						me.vitals.ammo = me.vitals.maxAmmo;
+						powerup.uses--;
+
+						if(powerup.uses < 1){
+							powerup.destroy();
+							powerups.splice(i, 1);
+						}
+					}
+				}
+			}
+		}
 
 		if(count > 0){
 			sum.x /= count;
@@ -150,6 +228,33 @@ FriendAI = {
 			}
 		}, this);
 
+		//move away from powerups we don't need so we don't block others
+		powerups.forEach(function(e){
+			if((me.vitals.health > me.vitals.maxHealth*0.66 && e.name == "healthpack") ||
+				(me.vitals.ammo > me.vitals.maxAmmo*0.66 && e.name == "ammopack")){
+				var dx = me.sprite.x - e.x;
+				var dy = me.sprite.y - e.y;
+				var d = Math.sqrt(dx*dx + dy*dy);
+
+				if(d > 0 && d < this.desiredSeparation*2){
+					var vecSub = {x: 0, y: 0};
+					vecSub.x = me.sprite.x - e.x;
+					vecSub.y = me.sprite.y - e.y;
+					var vecSubD = Math.sqrt(vecSub.x*vecSub.x + vecSub.y*vecSub.y);
+					vecSub.x /= vecSubD;
+					vecSub.y /= vecSubD;
+					vecSub.x *= d;
+					vecSub.y *= d;
+
+					mean.x += vecSub.x*5;
+					mean.y += vecSub.y*5;
+
+
+					count+=5; 
+				}
+			}
+		})
+
 		//let's also check enemies here!
 
 		enemies.forEach(function(e){
@@ -163,14 +268,14 @@ FriendAI = {
 				vecSub.x /= vecSubD;
 				vecSub.y /= vecSubD;
 				//*2 because we really hate the enemies
-				vecSub.x *= d*2;
-				vecSub.y *= d*2;
+				vecSub.x *= d;
+				vecSub.y *= d;
 
-				mean.x += vecSub.x;
-				mean.y += vecSub.y;
+				mean.x += vecSub.x*2;
+				mean.y += vecSub.y*2;
 
 
-				count++; 
+				count+=2; 
 			}
 		}, this);
 

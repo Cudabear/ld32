@@ -16,7 +16,7 @@ var enemySpawns = [];
 var powerups = [];
 
 var enemySpawnCooldown = 0;
-var maxEnemySpawnCooldown = 120;
+var maxEnemySpawnCooldown = 240;
 
 var equipment = {
 	healthPacks: 1,
@@ -69,6 +69,7 @@ function preload(){
 	game.load.image('barricade', 'res/img/pickups/barricade.png');
 	game.load.image('health', 'res/img/pickups/health.png');
 	game.load.image('ammo', 'res/img/pickups/ammo.png');
+	game.load.image('chatbubble', 'res/img/char/chatbubble.png');
 }
 
 function create(){
@@ -84,7 +85,7 @@ function create(){
 	spawns = map.createLayer('penguinspawns', WIDTH*2, HEIGHT*2);
 	spawns.alpha = 0;
 	layer.resizeWorld();
-	//slayer.debug = true;
+	layer.debug = true;
 
 	var tiles = layer.getTiles(0, 0, layer.width, layer.height);
 	tiles.forEach(function(tile){
@@ -160,10 +161,14 @@ function update(){
 }
 
 function render(){
-	 // blue.render();
+	  //blue.render();
 	 // red.render();
 	 // yellow.render();
 	 // green.render();
+
+	 friends.forEach(function(f){
+	 	f.render();
+	 },this);
 }
 
 function onLayerClick(event){
@@ -174,21 +179,24 @@ function onLayerClick(event){
 			switch(itemToPlace){
 				case "healthpack":
 					equipment.healthPacks--;
-					var newPowerup = game.add.sprite(tile.x*64, tile.y*64, 'health');
-					newPowerup.uses = 3;
+					var newPowerup = game.add.sprite(tile.x*64 + 32, tile.y*64  +32, 'health');
+					newPowerup.anchor.setTo(0.5);
+					newPowerup.uses = 6;
 					newPowerup.name = 'healthpack';
 					powerups.push(newPowerup);
 				break;
 				case "ammopack":
 					equipment.ammoPacks--;
-					var newPowerup = game.add.sprite(tile.x*64, tile.y*64, 'ammo');
+					var newPowerup = game.add.sprite(tile.x*64+32, tile.y*64+32, 'ammo');
+					newPowerup.anchor.setTo(0.5);
 					newPowerup.uses = 3;
 					newPowerup.name = 'ammopack';
 					powerups.push(newPowerup);
 				break;
 				case "barricade":
 					equipment.barricades--;
-					var newPowerup = game.add.sprite(tile.x*64, tile.y*64, 'barricade');
+					var newPowerup = game.add.sprite(tile.x*64+32, tile.y*64+32, 'barricade');
+					newPowerup.anchor.setTo(0.5);
 					game.physics.enable(newPowerup, Phaser.Physics.ARCADE);
 					newPowerup.body.immovable = true;
 					newPowerup.uses = 500;

@@ -7,28 +7,45 @@ Character = function(x, y, spriteName){
 	this.sprite.animations.add('walk', [2, 3]);
 	this.sprite.animations.add('shoot', [4, 5]);
 
+	this.chatBubble =  game.add.image(x, y, 'chatbubble');
+	this.chatBubble.scale.setTo(2);
+	this.chatBubble.alpha = 0;
+	this.chatText = game.add.text(x, y, '', {fill: "#000000", font: "16pt arial", wordWrap: true, wordWrapWidth: this.chatBubble.width - 10});
+	this.chatText.alpha = 0;
+
 	this.sprite.anchor.setTo(0.5, 0.5);
+
+	this.graphics = game.add.graphics(0, 0);
 
 	//physics
 	game.physics.enable(this.sprite, Phaser.Physics.ARCADE);
 	this.sprite.body.collideWorldBounds = true;
+	this.sprite.body.setSize(50, 60, 5, 20)
 	//this.sprite.body.velocity.x = (Math.random()-2)*2;
 	//this.sprite.body.velocity.y = (Math.random()-2)*2;
 
 	this.vitals = {
 		speed: 100,
 		health: 10,
+		maxHealth: 100,
+		ammo: 10,
+		maxAmmo: 100,
 		shotCooldown: 0,
 		maxShotCooldown: 25
 	}
 
 	this.logic = {
-		isMoving: false,
+		isSpeaking: false,
+		speakCooldown: 0,
+		maxSpeakCooldown: 1200,
+		timeSpoke: 0,
+		maxTimeSpoke: 240,
+		message: "",
+
 		target: null,
-		chosenDestination: {
-			x: 0,
-			y: 0
-		}
+		movementGoal: null,
+		idealPath: [],
+		idealPathIndex: 0,
 	}
 
 
@@ -60,6 +77,10 @@ Character = function(x, y, spriteName){
 
 	this.isDead = function(){
 		return this.vitals.health <= 0;
+	}
+
+	this.speak = function(){
+
 	}
 
 	this.update = function(){
@@ -99,8 +120,125 @@ Character = function(x, y, spriteName){
 			this.logic.target = null;
 		}
 
+		if(!this.logic.movementGoal || !this.logic.movementGoal.alive){
+			if(this.vitals.health < this.vitals.maxHealth*0.33){
+				powerups.forEach(function(e){
+					if(e.name == "healthpack"){
+						this.logic.movementGoal = e;
+
+						var myTile = map.getTile(Math.floor(this.sprite.x/64), Math.floor(this.sprite.y/64), 0);
+						var hisTile = map.getTile(Math.floor(e.x/64), Math.floor(e.y/64), 0);
+						this.logic.idealPath = EnemyAI.getShortestPath(map, myTile, hisTile);
+						this.logic.idealPathIndex = 0;
+					}
+				}, this);
+			}
+
+			if(this.vitals.ammo < this.vitals.maxAmmo*0.33){
+				powerups.forEach(function(e){
+					if(e.name == "ammopack"){
+						this.logic.movementGoal = e;
+
+						var myTile = map.getTile(Math.floor(this.sprite.x/64), Math.floor(this.sprite.y/64), 0);
+						var hisTile = map.getTile(Math.floor(e.x/64), Math.floor(e.y/64), 0);
+						this.logic.idealPath = EnemyAI.getShortestPath(map, myTile, hisTile);
+						this.logic.idealPathIndex = 0;
+					}
+				}, this);
+			}
+		}else if(this.logic.idealPathIndex === this.logic.idealPath.length - 1 ){
+			this.logic.idealPathIndex = 0;
+			this.logic.idealPath = [];
+			this.movementGoal = null;
+		}
+
 		if(this.vitals.shotCooldown > 0){
 			this.vitals.shotCooldown--;
 		}
+
+		if(this.logic.speakCooldown > 0){
+			this.logic.speakCooldown--;
+		}
+
+		if(this.logic.timeSpoke > 0){
+			this.logic.timeSpoke--;
+
+			if(this.logic.timeSpoke === 0){
+				this.logic.isSpeaking = false;
+				this.logic.message = "";
+				this.chatText.setText("");
+				this.chatText.alpha = 0;
+				this.chatBubble.alpha = 0;
+			}
+		}
+
+		if(!this.logic.isSpeaking && this.logic.speakCooldown === 0){
+			if(Math.random()*100 >= 99.9){
+				this.logic.isSpeaking = true;
+				this.logic.speakCooldown = this.logic.maxSpeakCooldown;
+				this.logic.timeSpoke = this.logic.maxTimeSpoke;
+				this.pickMessage();
+				this.chatText.setText(this.logic.message);
+				this.chatText.alpha = 1;
+				this.chatBubble.alpha = 1;
+			}
+		}
+
+		this.chatBubble.x = this.sprite.x + 10;
+		this.chatBubble.y = this.sprite.y - this.chatBubble.height - 30;
+		this.chatText.x = this.chatBubble.x + 5;
+		this.chatText.y = this.chatBubble.y + 3;
+	}
+
+	this.pickMessage = function(){
+		if(this.vitals.health < this.vitals.maxHealth*0.33){
+			this.logic.message = "I could use a health pickup!";
+		}
+
+		if(this.vitals.ammo < this.vitals.maxAmmo*0.33){
+			this.logic.message = "Running out of ammo here!";
+		}
+
+		var possibleMessages = [
+			"Message 1 this is a long message that will wrap",
+			"Message 2 this is a long message that will wrap",
+			"Message 3 this is a long message that will wrap"
+		];
+
+		if(this.logic.message === ""){
+			var r = Math.round(Math.random()*(possibleMessages.length - 1));
+			this.logic.message = possibleMessages[r];
+		}
+	}
+
+	this.render = function(){
+		this.graphics.clear();
+		this.graphics.beginFill(0x009900);
+		this.graphics.moveTo(this.sprite.x - this.sprite.width/2,
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height );
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2 + (this.sprite.width*(this.vitals.health/this.vitals.maxHealth)),
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height );
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2 + (this.sprite.width*(this.vitals.health/this.vitals.maxHealth)),
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 5);
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2,
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 5);
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2,
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height);
+		this.graphics.endFill();
+
+		this.graphics.beginFill(0x000099);
+		this.graphics.moveTo(this.sprite.x - this.sprite.width/2,
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 5);
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2 + (this.sprite.width*(this.vitals.ammo/this.vitals.maxAmmo)),
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 5);
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2 + (this.sprite.width*(this.vitals.ammo/this.vitals.maxAmmo)),
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 10);
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2,
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 10);
+		this.graphics.lineTo(this.sprite.x - this.sprite.width/2,
+		 this.sprite.y - this.sprite.height/2 + this.sprite.height + 5);
+		this.graphics.endFill();
+
+		game.debug.body(this.sprite);
 	}
 }

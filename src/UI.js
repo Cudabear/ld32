@@ -13,7 +13,7 @@ UI = function(){
 		}
 
 		if(equipment.ammoPacks === 0){
-			this.healthKitsText.setStyle(this.emptyTextStyle);
+			this.ammoKitsText.setStyle(this.emptyTextStyle);
 		}
 	}
 
