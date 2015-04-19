@@ -23,6 +23,13 @@ var maxEnemySpawnCooldown = 120;
 var currentWave = 0;
 var remainingEnemies = 0;
 
+var messageIndex;
+var messages = [];
+
+var speechBox = null;
+var speechBoxText = null;
+var speechBoxTitleText = null;
+
 var equipment = {
 	healthPacks: 1,
 	ammoPacks: 1,
@@ -35,6 +42,10 @@ var itemToPlace = null;
 var aKey;
 var sKey;
 var dKey;
+var spacebar;
+var spacebarSpamProtection = 0;
+
+var levelIndex = 1;
 
 var config = {
 
@@ -68,6 +79,7 @@ function preload(){
 
 	//tilemaps
 	game.load.tilemap('test', 'res/levels/test.json', null, Phaser.Tilemap.TILED_JSON);
+	game.load.tilemap('level1', 'res/levels/level1.json', null, Phaser.Tilemap.TILED_JSON);
 
 	//tilesets
 	game.load.image('base', 'res/img/tileset/tileset.png');
@@ -79,76 +91,119 @@ function preload(){
 	game.load.image('health', 'res/img/pickups/health.png');
 	game.load.image('ammo', 'res/img/pickups/ammo.png');
 	game.load.image('chatbubble', 'res/img/char/chatbubble.png');
+	game.load.image('chatbox', 'res/img/char/chatbox.png');
 }
 
 function create(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
 
-	level = new Level();
+	level = LevelFactory.createLevel(levelIndex);
 
 	powerupGraphics = game.add.graphics(0, 0);
+
+	speechBox = game.add.image(30, HEIGHT, 'chatbox');
+	speechBox.scale.setTo(2);
+	speechBox.alpha = 0;
+	speechBoxText = game.add.text(50, HEIGHT + 110, "", {fill: "#FFFFFF", font: "26pt arial", wordWrap: true, wordWrapWidth: speechBox.width - 30});
+	speechBoxText.alpha = 0;
+	speechBoxTitleText = game.add.text(140, HEIGHT + 30, "BLUE", {fill: "#000099", font: "32pt arial"});
+	speechBoxTitleText.alpha = 0;
 
 	ui = new UI();
 
 	aKey = game.input.keyboard.addKey(Phaser.Keyboard.A);
 	sKey = game.input.keyboard.addKey(Phaser.Keyboard.S);
 	dKey = game.input.keyboard.addKey(Phaser.Keyboard.D);
+	spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 }
 
 function update(){
-	if(enemySpawnCooldown >= maxEnemySpawnCooldown && remainingEnemies > 0){
-		enemySpawnCooldown = 0;
+	if(messageIndex < messages.length){   
+		speechBox.alpha = 1;
+		speechBoxText.alpha = 1;
+		speechBoxTitleText.alpha = 1;
 
-		var spawn = enemySpawns[Math.round(Math.random()*(enemySpawns.length-1))];
+		speechBoxText.setText(messages[messageIndex]);
 
-		enemies.push(new Enemy(spawn.x*64+32, spawn.y*64+32, 'gremlin'));
-		remainingEnemies--;
+		if(spacebar.isDown && spacebarSpamProtection > 30){
+			messageIndex++;
+			spacebarSpamProtection = 0;
+		}else{
+			spacebarSpamProtection++;
+		}
 	}else{
-		enemySpawnCooldown++;
-	}
-
-	if(remainingEnemies < 1 && enemySpawnCooldown > maxEnemySpawnCooldown*5){
-		level.completeWave();
-	}
+		speechBox.alpha = 0;
+		speechBoxText.alpha = 0;
+		speechBoxTitleText.alpha = 0;
 
 
-	for(var i = enemies.length - 1; i >= 0; i--){
-		var e = enemies[i];
-		e.update();
+		if(enemySpawnCooldown >= maxEnemySpawnCooldown && remainingEnemies > 0){
+			enemySpawnCooldown = 0;
 
-		if(e.isDead()){
-			e.sprite.destroy();
-			enemies.splice(i, 1);
+			var spawn = enemySpawns[Math.round(Math.random()*(enemySpawns.length-1))];
+
+			enemies.push(new Enemy(spawn.x*64+32, spawn.y*64+32, 'gremlin'));
+			remainingEnemies--;
+		}else{
+			enemySpawnCooldown++;
 		}
-	}
 
-	for(var i = friends.length - 1; i >= 0; i--){
-		var e = friends[i];
-		e.update();
-
-		if(e.isDead()){
-			e.chatBubble.destroy();
-			e.chatText.destroy();
-			e.graphics.destroy();
-			e.sprite.destroy();
-			friends.splice(i, 1);
+		if(remainingEnemies < 1 && enemies.length == 0){
+			level.completeWave();
 		}
-	}
 
-	if(!isPlacing){
-		if(aKey.isDown && equipment.barricades > 0){
-			itemToPlace = "barricade";
-			isPlacing = true;
-		}else if(sKey.isDown && equipment.healthPacks > 0){
-			itemToPlace = "healthpack";
-			isPlacing = true;
-		}else if(dKey.isDown && equipment.ammoPacks > 0){
-			itemToPlace = "ammopack";
-			isPlacing = true;
+
+		for(var i = enemies.length - 1; i >= 0; i--){
+			var e = enemies[i];
+			e.update();
+
+			if(e.isDead()){
+				e.sprite.destroy();
+				enemies.splice(i, 1);
+			}
+		}
+
+		for(var i = friends.length - 1; i >= 0; i--){
+			var e = friends[i];
+			e.update();
+
+			if(e.isDead()){
+				e.chatBubble.destroy();
+				e.chatText.destroy();
+				e.graphics.destroy();
+				e.sprite.destroy();
+				friends.splice(i, 1);
+			}
+		}
+
+		if(!isPlacing){
+			if(aKey.isDown && equipment.barricades > 0){
+				itemToPlace = "barricade";
+				isPlacing = true;
+				changeCursorToImage("res/img/pickups/barricadesmall.png");
+			}else if(sKey.isDown && equipment.healthPacks > 0){
+				itemToPlace = "healthpack";
+				isPlacing = true;
+				changeCursorToImage("res/img/pickups/healthsmall.png");
+			}else if(dKey.isDown && equipment.ammoPacks > 0){
+				itemToPlace = "ammopack";
+				isPlacing = true;
+				changeCursorToImage("res/img/pickups/ammosmall.png");
+			}
 		}
 	}
 
 	ui.update();
+}
+
+function changeCursorToImage(url){
+    var cur = $('#game');
+    cur.css("cursor", "url("+url+"), default");
+}
+
+function changeCursorToPointer(){
+	var cur = $('#game');
+    cur.css("cursor", "default");
 }
 
 function render(){
@@ -233,6 +288,7 @@ function onLayerClick(event){
 			}
 
 			isPlacing = false;
+			changeCursorToPointer();
 			itemToPlace = null;
 		}
 	}	

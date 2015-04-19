@@ -36,12 +36,15 @@ UI = function(){
 		if(element === this.barricadesIcon && equipment.barricades > 0){
 			itemToPlace = "barricade";
 			isPlacing = true;
+			changeCursorToImage("res/img/pickups/barricadesmall.png");
 		}else if(element === this.healthKitsIcon && equipment.healthPacks > 0){
 			itemToPlace = "healthpack";
 			isPlacing = true;
+			changeCursorToImage("res/img/pickups/healthsmall.png");
 		}else if(element === this.ammoKitsIcon && equipment.ammoPacks > 0){
 			itemToPlace = "ammopack";
 			isPlacing = true;
+			changeCursorToImage("res/img/pickups/ammosmall.png");
 		}
 	}
 
