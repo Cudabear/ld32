@@ -15,6 +15,9 @@ UI = function(){
 		if(equipment.ammoPacks === 0){
 			this.ammoKitsText.setStyle(this.emptyTextStyle);
 		}
+
+		this.currentWaveText.setText('Current Wave: ' + currentWave);
+		this.remainingEnemiesText.setText('Remaining Enemies: ' + remainingEnemies);
 	}
 
 	this.render = function(){
@@ -53,6 +56,8 @@ UI = function(){
 	this.barricadesIcon.events.onInputOut.add(this.onOut, this);
 	this.barricadesIcon.events.onInputDown.add(this.onDown, this);
 	this.barricadesText = game.add.text(35, HEIGHT*2 - 140, equipment.barricades, this.textStyle);
+	this.barricadesKeyText = game.add.text(35, HEIGHT*2 - 60, "A", this.textStyle);
+
 	this.healthKitsIcon = game.add.image(160, HEIGHT*2 - 160, 'health');
 	this.healthKitsIcon.scale.setTo(2);
 	this.healthKitsIcon.alpha = 0.8;
@@ -61,6 +66,8 @@ UI = function(){
 	this.healthKitsIcon.events.onInputOut.add(this.onOut, this);
 	this.healthKitsIcon.events.onInputDown.add(this.onDown, this);
 	this.healthKitsText = game.add.text(175, HEIGHT*2 - 140, equipment.healthPacks, this.textStyle);
+	this.healthKitsKeyText = game.add.text(175, HEIGHT*2 - 60, "S", this.textStyle);
+
 	this.ammoKitsIcon = game.add.image(300, HEIGHT*2- 160, 'ammo');
 	this.ammoKitsIcon.scale.setTo(2);
 	this.ammoKitsIcon.alpha = 0.8;
@@ -69,4 +76,8 @@ UI = function(){
 	this.ammoKitsIcon.events.onInputOut.add(this.onOut, this);
 	this.ammoKitsIcon.events.onInputDown.add(this.onDown, this);
 	this.ammoKitsText = game.add.text(325, HEIGHT*2 - 140, equipment.healthPacks, this.textStyle);
+	this.ammoKitsKeyText = game.add.text(325, HEIGHT*2 - 60, "D", this.textStyle);
+
+	this.currentWaveText = game.add.text(435, HEIGHT*2 - 120, 'Current Wave: ' + currentWave, this.textStyle);
+	this.remainingEnemiesText = game.add.text(435, HEIGHT*2 - 80, 'Remaining Enemies: ' + remainingEnemies, this.textStyle);
 }

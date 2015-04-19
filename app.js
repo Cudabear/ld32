@@ -15,17 +15,26 @@ var enemies = [];
 var enemySpawns = [];
 var powerups = [];
 
+var level;
+var powerupGraphics;
+
 var enemySpawnCooldown = 0;
-var maxEnemySpawnCooldown = 240;
+var maxEnemySpawnCooldown = 120;
+var currentWave = 0;
+var remainingEnemies = 0;
 
 var equipment = {
 	healthPacks: 1,
 	ammoPacks: 1,
-	barricades: 2,
+	barricades: 200,
 }
 
 var isPlacing = false;
 var itemToPlace = null;
+
+var aKey;
+var sKey;
+var dKey;
 
 var config = {
 
@@ -75,61 +84,31 @@ function preload(){
 function create(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
 
-	map = game.add.tilemap('test');
-	map.addTilesetImage('base', 'base');
-	map.setCollisionBetween(2, 10);
-	map.setCollisionBetween(18, 20);
-	map.setCollisionBetween(28, 29);
-	layer = map.createLayer('layer1', WIDTH*2, HEIGHT*2);
-	game.input.onDown.add(onLayerClick, this);
-	spawns = map.createLayer('penguinspawns', WIDTH*2, HEIGHT*2);
-	spawns.alpha = 0;
-	layer.resizeWorld();
-	layer.debug = true;
+	level = new Level();
 
-	var tiles = layer.getTiles(0, 0, layer.width, layer.height);
-	tiles.forEach(function(tile){
-		//enemy spawn tiles
-		if(tile.index >= 24 && tile.index <= 27){
-			enemySpawns.push({x: tile.x, y: tile.y});
-		}
-	}, this);
-
-	var penguinSpawnSpaces = [];
-	var spawnTiles = spawns.getTiles(0, 0, spawns.width, spawns.height);
-	spawnTiles.forEach(function(tile){
-		if(tile.index===30){
-			penguinSpawnSpaces.push(tile);
-			tile.destroy();
-		}
-	}, this);
-
-	if(penguinSpawnSpaces.length != 4){
-		throw 'Dufus, we need exactly 4 penguin spawns!';
-	}
-
-	blue = new Character(penguinSpawnSpaces[0].x*64-32, penguinSpawnSpaces[0].y*64-32, 'blue');
-
-	green = new Character(penguinSpawnSpaces[1].x*64-32, penguinSpawnSpaces[1].y*64-32, 'blue');
-
-	red = new Character(penguinSpawnSpaces[2].x*64-32, penguinSpawnSpaces[2].y*64-32, 'blue');
-
-	yellow = new Character(penguinSpawnSpaces[3].x*64-32, penguinSpawnSpaces[3].y*64-32, 'blue');
-
-	friends = [blue, green, red, yellow];
+	powerupGraphics = game.add.graphics(0, 0);
 
 	ui = new UI();
+
+	aKey = game.input.keyboard.addKey(Phaser.Keyboard.A);
+	sKey = game.input.keyboard.addKey(Phaser.Keyboard.S);
+	dKey = game.input.keyboard.addKey(Phaser.Keyboard.D);
 }
 
 function update(){
-	if(enemySpawnCooldown >= maxEnemySpawnCooldown){
+	if(enemySpawnCooldown >= maxEnemySpawnCooldown && remainingEnemies > 0){
 		enemySpawnCooldown = 0;
 
 		var spawn = enemySpawns[Math.round(Math.random()*(enemySpawns.length-1))];
 
 		enemies.push(new Enemy(spawn.x*64+32, spawn.y*64+32, 'gremlin'));
+		remainingEnemies--;
 	}else{
 		enemySpawnCooldown++;
+	}
+
+	if(remainingEnemies < 1 && enemySpawnCooldown > maxEnemySpawnCooldown*5){
+		level.completeWave();
 	}
 
 
@@ -148,13 +127,25 @@ function update(){
 		e.update();
 
 		if(e.isDead()){
+			e.chatBubble.destroy();
+			e.chatText.destroy();
+			e.graphics.destroy();
 			e.sprite.destroy();
 			friends.splice(i, 1);
 		}
 	}
 
-	if(isPlacing){
-
+	if(!isPlacing){
+		if(aKey.isDown && equipment.barricades > 0){
+			itemToPlace = "barricade";
+			isPlacing = true;
+		}else if(sKey.isDown && equipment.healthPacks > 0){
+			itemToPlace = "healthpack";
+			isPlacing = true;
+		}else if(dKey.isDown && equipment.ammoPacks > 0){
+			itemToPlace = "ammopack";
+			isPlacing = true;
+		}
 	}
 
 	ui.update();
@@ -169,6 +160,22 @@ function render(){
 	 friends.forEach(function(f){
 	 	f.render();
 	 },this);
+
+	powerupGraphics.clear();
+	powerups.forEach(function(powerup){
+		powerupGraphics.beginFill(0x009900);
+		powerupGraphics.moveTo(powerup.x - powerup.width/2,
+		 powerup.y - powerup.height/2 + powerup.height );
+		powerupGraphics.lineTo(powerup.x - powerup.width/2 + (powerup.width*(powerup.uses/powerup.maxUses)),
+		 powerup.y - powerup.height/2 + powerup.height );
+		powerupGraphics.lineTo(powerup.x - powerup.width/2 + (powerup.width*(powerup.uses/powerup.maxUses)),
+		 powerup.y - powerup.height/2 + powerup.height + 5);
+		powerupGraphics.lineTo(powerup.x - powerup.width/2,
+		 powerup.y - powerup.height/2 + powerup.height + 5);
+		powerupGraphics.lineTo(powerup.x - powerup.width/2,
+		 powerup.y - powerup.height/2 + powerup.height);
+		powerupGraphics.endFill();
+	});
 }
 
 function onLayerClick(event){
@@ -181,7 +188,8 @@ function onLayerClick(event){
 					equipment.healthPacks--;
 					var newPowerup = game.add.sprite(tile.x*64 + 32, tile.y*64  +32, 'health');
 					newPowerup.anchor.setTo(0.5);
-					newPowerup.uses = 6;
+					newPowerup.uses = 500;
+					newPowerup.maxUses = 500;
 					newPowerup.name = 'healthpack';
 					powerups.push(newPowerup);
 				break;
@@ -189,7 +197,8 @@ function onLayerClick(event){
 					equipment.ammoPacks--;
 					var newPowerup = game.add.sprite(tile.x*64+32, tile.y*64+32, 'ammo');
 					newPowerup.anchor.setTo(0.5);
-					newPowerup.uses = 3;
+					newPowerup.uses = 500;
+					newPowerup.maxUses = 500;
 					newPowerup.name = 'ammopack';
 					powerups.push(newPowerup);
 				break;
@@ -200,7 +209,22 @@ function onLayerClick(event){
 					game.physics.enable(newPowerup, Phaser.Physics.ARCADE);
 					newPowerup.body.immovable = true;
 					newPowerup.uses = 500;
+					newPowerup.sprite = newPowerup;
+					newPowerup.maxUses =500;
 					newPowerup.name = 'barricade';
+					newPowerup.getHit = function(damage){
+						this.uses -= damage;
+
+						if(this.uses < 1){
+							this.destroy();
+							
+							var i = powerups.indexOf(this);
+							powerups.splice(i, 1);
+						}
+					};
+					newPowerup.isDead = function(){
+						return this.uses < 1;
+					}
 					powerups.push(newPowerup);
 				break;
 				default:
