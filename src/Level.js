@@ -178,7 +178,7 @@ Level = function(){
 }
 
 LevelFactory = {
-	createLevel(levelIndex){
+	createLevel: function(levelIndex){
 		switch(levelIndex){
 			case 1:
 				var config = {
