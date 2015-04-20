@@ -11,7 +11,7 @@ Enemy = function(x, y, spriteName){
 
 	this.vitals = {
 		speed: 3,
-		health: 50,
+		health: 35,
 		seekRadius: 2000,
 		attackCooldown: 0,
 		maxAttackCooldown: 25

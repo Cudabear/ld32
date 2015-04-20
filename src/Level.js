@@ -7,13 +7,13 @@ Level = function(){
 		blue.vitals.range = 240;
 
 		green = new Character(0, 0, 'green');
-		green.vitals.attack = 10;
-		green.vitals.defence = 1;
+		green.vitals.attack = 7;
+		green.vitals.defence = 2;
 		green.vitals.range = 300;
 
 		red = new Character(0, 0, 'red');
-		red.vitals.attack = 1;
-		red.vitals.defence = 10;
+		red.vitals.attack = 2;
+		red.vitals.defence = 7;
 		red.vitals.range = 150;
 
 		yellow = new Character(0,0, 'yellow');
