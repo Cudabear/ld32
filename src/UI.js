@@ -16,7 +16,7 @@ UI = function(){
 			this.ammoKitsText.setStyle(this.emptyTextStyle);
 		}
 
-		this.currentWaveText.setText('Current Wave: ' + currentWave);
+		this.currentWaveText.setText('Current Wave: ' + currentWave + " / " + level.config.waves.length);
 		this.remainingEnemiesText.setText('Remaining Enemies: ' + remainingEnemies);
 	}
 

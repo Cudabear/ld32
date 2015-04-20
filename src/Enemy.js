@@ -3,15 +3,15 @@ Enemy = function(x, y, spriteName){
 
 	this.sprite.anchor.setTo(0.5, 0.5);
 
-	//physics
-	//game.physics.enable(this.sprite, Phaser.Physics.ARCADE);
-	//this.sprite.body.collideWorldBounds = true;
+	this.sprite.animations.add('walk', [0, 1]);
+	this.sprite.animations.add('attack', [2, 3]);
+
 	//animations
 
 
 	this.vitals = {
 		speed: 3,
-		health: 10,
+		health: 50,
 		seekRadius: 2000,
 		attackCooldown: 0,
 		maxAttackCooldown: 25
@@ -24,11 +24,14 @@ Enemy = function(x, y, spriteName){
 		target: null,
 	}
 
-	this.doWalk = function(){}
+	this.doWalk = function(){
+		this.sprite.animations.play('walk', 4, false);
+	}
 
-	this.doStand = function(){}
 
-	this.doShoot = function(){}
+	this.doShoot = function(){
+		this.sprite.animations.play('attack', 4, false);
+	}
 
 	this.getHit = function(damage){
 		this.vitals.health -= damage;
@@ -45,6 +48,7 @@ Enemy = function(x, y, spriteName){
 
 		if(d <= 92 && this.vitals.attackCooldown === 0){
 			otherSprite.getHit(20);
+			this.doShoot();
 			this.vitals.attackCooldown = this.vitals.maxAttackCooldown;
 
 			if(otherSprite.isDead()){
@@ -65,24 +69,32 @@ Enemy = function(x, y, spriteName){
 				var d = EnemyAI.getDistance(this, f);
 
 				if(!closestFriend || d < closestD){
-					closestFriend = f;
+					if(!f.isDead()){
+						closestFriend = f;
+					}
 				}
 			}, this);
-			this.logic.target = closestFriend;
+			if(closestFriend){
+				this.logic.target = closestFriend;
 
-			var dx = this.sprite.x - this.logic.target.sprite.x; //- to the right, + to the left
-			var dy = this.sprite.y - this.logic.target.sprite.y; //- to the down, + to the up
-			var tryTileX = dx < 0 ? -1 : 1;
-			var tryTileY = dy < 0 ? -1 : 1;
+				var dx = this.sprite.x - this.logic.target.sprite.x; //- to the right, + to the left
+				var dy = this.sprite.y - this.logic.target.sprite.y; //- to the down, + to the up
+				var tryTileX = dx < 0 ? -1 : 1;
+				var tryTileY = dy < 0 ? -1 : 1;
 
-			var myTile = map.getTile(Math.floor(this.sprite.x/64), Math.floor(this.sprite.y/64), 0);
-			var hisTile = map.getTile(Math.floor(this.logic.target.sprite.x/64), Math.floor(this.logic.target.sprite.y/64), 0);
-			this.logic.idealPath = EnemyAI.getShortestPath(map, myTile, hisTile, this);
-			this.logic.idealPathIndex = 0;
+				var myTile = map.getTile(Math.floor(this.sprite.x/64), Math.floor(this.sprite.y/64), 0);
+				var hisTile = map.getTile(Math.floor(this.logic.target.sprite.x/64), Math.floor(this.logic.target.sprite.y/64), 0);
+				this.logic.idealPath = EnemyAI.getShortestPath(map, myTile, hisTile, this);
+				this.logic.idealPathIndex = 0;
+			}
 		}
 
 		if(this.logic.target){
-			this.attack(this.logic.target);
+			if(this.logic.target.isDead()){
+				this.logic.target = null;
+			}else{
+				this.attack(this.logic.target);
+			}
 		}
 
 		if(this.vitals.attackCooldown > 0){

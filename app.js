@@ -39,36 +39,35 @@ var equipment = {
 var isPlacing = false;
 var itemToPlace = null;
 
+var levelUpScreen;
+var levelUpScreenOpen;
+
+var map;
+var layer;
+
+var isLoading = false;
+
 var aKey;
 var sKey;
 var dKey;
 var spacebar;
 var spacebarSpamProtection = 0;
+var rKey;
+
+var hasAnyoneDiedYet = false;
 
 var levelIndex = 1;
 
-var config = {
-
+var sound = {
+	bgMusic: null,
+	shoot: null,
+	hurt: null
 }
 
 window.onload = function(){
 	game = new Phaser.Game(WIDTH*2, HEIGHT*2, Phaser.OPENGL, 'game', {preload: preload, create: create, update: update, render: render});
 
-	$('#game')[0].addEventListener('mousewheel', function(e){
-		var ds = e.deltaY;
-		var dx = e.offsetX;
-		var dy = e.offsetY;
-		var p = ds/-1000;
-
-
-		if(game.camera.scale.x + p > 0.5 && game.camera.scale.x + p <= 3){
-			//game.camera.scale.x += p;
-		}
-
-		if(game.camera.scale.y + p > 0.5 && game.camera.scale.y + p <= 3){	
-			//game.camera.scale.y += p;	
-		}
-	});
+	$(window).trigger('resize');
 }
 
 function preload(){
@@ -78,26 +77,48 @@ function preload(){
     game.scale.setScreenSize();
 
 	//tilemaps
-	game.load.tilemap('test', 'res/levels/test.json', null, Phaser.Tilemap.TILED_JSON);
 	game.load.tilemap('level1', 'res/levels/level1.json', null, Phaser.Tilemap.TILED_JSON);
+	game.load.tilemap('level2', 'res/levels/level2.json', null, Phaser.Tilemap.TILED_JSON);
+	//I broke level 3 and didn't have time ot fix it :D
+	game.load.tilemap('level4', 'res/levels/level4.json', null, Phaser.Tilemap.TILED_JSON);
+	game.load.tilemap('level5', 'res/levels/level5.json', null, Phaser.Tilemap.TILED_JSON);
 
 	//tilesets
 	game.load.image('base', 'res/img/tileset/tileset.png');
 
 	//sprites
 	game.load.atlasJSONHash('blue', 'res/img/char/blue.png', 'res/img/char/penguinanim.json');
-	game.load.image('gremlin', 'res/img/char/gremlin.png');
+	game.load.atlasJSONHash('red', 'res/img/char/red.png', 'res/img/char/penguinanim.json');
+	game.load.atlasJSONHash('green', 'res/img/char/green.png', 'res/img/char/penguinanim.json');
+	game.load.atlasJSONHash('yellow', 'res/img/char/yellow.png', 'res/img/char/penguinanim.json');
+	game.load.atlasJSONHash('gremlin', 'res/img/char/enemy.png', 'res/img/char/enemyanim.json');
 	game.load.image('barricade', 'res/img/pickups/barricade.png');
 	game.load.image('health', 'res/img/pickups/health.png');
 	game.load.image('ammo', 'res/img/pickups/ammo.png');
 	game.load.image('chatbubble', 'res/img/char/chatbubble.png');
 	game.load.image('chatbox', 'res/img/char/chatbox.png');
+
+	//music
+	game.load.audio('bgMusic', 'res/sfx/ld32theme.ogg');
+	game.load.audio('hit', 'res/sfx/shoot.wav');
+	game.load.audio('hurt', 'res/sfx/hurt.wav');
+
+	doPreloadStuff();
 }
 
 function create(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
 
-	level = LevelFactory.createLevel(levelIndex);
+	level = new Level();
+	
+	sound.bgMusic = game.add.audio('bgMusic');
+	sound.bgMusic.loop = true;
+	sound.bgMusic.play();
+
+	sound.hurt = game.add.audio('hurt');
+	sound.shoot = game.add.audio('hit');
+
+	LevelFactory.createLevel(levelIndex);
 
 	powerupGraphics = game.add.graphics(0, 0);
 
@@ -106,7 +127,7 @@ function create(){
 	speechBox.alpha = 0;
 	speechBoxText = game.add.text(50, HEIGHT + 110, "", {fill: "#FFFFFF", font: "26pt arial", wordWrap: true, wordWrapWidth: speechBox.width - 30});
 	speechBoxText.alpha = 0;
-	speechBoxTitleText = game.add.text(140, HEIGHT + 30, "BLUE", {fill: "#000099", font: "32pt arial"});
+	speechBoxTitleText = game.add.text(60, HEIGHT + 30, "Communicator", {fill: "#FFFFFF", font: "32pt arial"});
 	speechBoxTitleText.alpha = 0;
 
 	ui = new UI();
@@ -115,85 +136,107 @@ function create(){
 	sKey = game.input.keyboard.addKey(Phaser.Keyboard.S);
 	dKey = game.input.keyboard.addKey(Phaser.Keyboard.D);
 	spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+	rKey = game.input.keyboard.addKey(Phaser.Keyboard.R);
+
+	levelUpScreen = new LevelUpScreen();
 }
 
 function update(){
-	if(messageIndex < messages.length){   
-		speechBox.alpha = 1;
-		speechBoxText.alpha = 1;
-		speechBoxTitleText.alpha = 1;
+	if(!isLoading){
+		if(messageIndex < messages.length){   
+			speechBox.alpha = 1;
+			speechBoxText.alpha = 1;
+			speechBoxTitleText.alpha = 1;
 
-		speechBoxText.setText(messages[messageIndex]);
+			speechBoxText.setText(messages[messageIndex]);
 
-		if(spacebar.isDown && spacebarSpamProtection > 30){
-			messageIndex++;
-			spacebarSpamProtection = 0;
+			if(spacebar.isDown && spacebarSpamProtection > 30){
+				messageIndex++;
+				spacebarSpamProtection = 0;
+			}else{
+				spacebarSpamProtection++;
+			}
+		}else if(levelUpScreenOpen){
+			//handled by HTML
 		}else{
-			spacebarSpamProtection++;
-		}
-	}else{
-		speechBox.alpha = 0;
-		speechBoxText.alpha = 0;
-		speechBoxTitleText.alpha = 0;
+			speechBox.alpha = 0;
+			speechBoxText.alpha = 0;
+			speechBoxTitleText.alpha = 0;
 
 
-		if(enemySpawnCooldown >= maxEnemySpawnCooldown && remainingEnemies > 0){
-			enemySpawnCooldown = 0;
+			if(enemySpawnCooldown >= maxEnemySpawnCooldown && remainingEnemies > 0){
+				enemySpawnCooldown = 0;
 
-			var spawn = enemySpawns[Math.round(Math.random()*(enemySpawns.length-1))];
+				var spawn = enemySpawns[Math.round(Math.random()*(enemySpawns.length-1))];
 
-			enemies.push(new Enemy(spawn.x*64+32, spawn.y*64+32, 'gremlin'));
-			remainingEnemies--;
-		}else{
-			enemySpawnCooldown++;
-		}
-
-		if(remainingEnemies < 1 && enemies.length == 0){
-			level.completeWave();
-		}
-
-
-		for(var i = enemies.length - 1; i >= 0; i--){
-			var e = enemies[i];
-			e.update();
-
-			if(e.isDead()){
-				e.sprite.destroy();
-				enemies.splice(i, 1);
+				enemies.push(new Enemy(spawn.x*64+32, spawn.y*64+32, 'gremlin'));
+				remainingEnemies--;
+			}else{
+				enemySpawnCooldown++;
 			}
+
+			if(remainingEnemies < 1 && enemies.length == 0){
+				level.completeWave();
+			}
+
+
+			for(var i = enemies.length - 1; i >= 0; i--){
+				var e = enemies[i];
+				e.update();
+
+				if(e.isDead()){
+					e.sprite.destroy();
+					enemies.splice(i, 1);
+				}
+			}
+
+			var anyoneAlive = false;
+			for(var i = friends.length - 1; i >= 0; i--){
+				var e = friends[i];
+				e.update();
+
+				if(!e.isDead()){
+					anyoneAlive = true;
+				}else{
+					if(!hasAnyoneDiedYet){
+						hasAnyoneDiedYet = true;
+						messages.push("Looks like one of our troops has fallen in battle.  Don't worry about them, they will revive and look for a helath kit after this wave of enemies.");
+					}
+				}
+
+
+			}
+
+			if(!anyoneAlive){
+				messages.push("How could you let all of our troops die?  Didn't you protect them?!  (Press R to restart)");
+			}
+
+			if(!isPlacing){
+				if(aKey.isDown && equipment.barricades > 0){
+					itemToPlace = "barricade";
+					isPlacing = true;
+					changeCursorToImage("res/img/pickups/barricadesmall.png");
+				}else if(sKey.isDown && equipment.healthPacks > 0){
+					itemToPlace = "healthpack";
+					isPlacing = true;
+					changeCursorToImage("res/img/pickups/healthsmall.png");
+				}else if(dKey.isDown && equipment.ammoPacks > 0){
+					itemToPlace = "ammopack";
+					isPlacing = true;
+					changeCursorToImage("res/img/pickups/ammosmall.png");
+				}
+			}
+
+			
 		}
 
-		for(var i = friends.length - 1; i >= 0; i--){
-			var e = friends[i];
-			e.update();
+		ui.update();
+		levelUpScreen.update();
 
-			if(e.isDead()){
-				e.chatBubble.destroy();
-				e.chatText.destroy();
-				e.graphics.destroy();
-				e.sprite.destroy();
-				friends.splice(i, 1);
-			}
-		}
-
-		if(!isPlacing){
-			if(aKey.isDown && equipment.barricades > 0){
-				itemToPlace = "barricade";
-				isPlacing = true;
-				changeCursorToImage("res/img/pickups/barricadesmall.png");
-			}else if(sKey.isDown && equipment.healthPacks > 0){
-				itemToPlace = "healthpack";
-				isPlacing = true;
-				changeCursorToImage("res/img/pickups/healthsmall.png");
-			}else if(dKey.isDown && equipment.ammoPacks > 0){
-				itemToPlace = "ammopack";
-				isPlacing = true;
-				changeCursorToImage("res/img/pickups/ammosmall.png");
-			}
+		if(rKey.isDown){
+			LevelFactory.createLevel(levelIndex);
 		}
 	}
-
-	ui.update();
 }
 
 function changeCursorToImage(url){
@@ -233,6 +276,10 @@ function render(){
 	});
 }
 
+function doPreloadStuff(){
+
+}
+
 function onLayerClick(event){
 	if(isPlacing){
 		var tile = map.getTile(Math.floor(event.worldX/64), Math.floor(event.worldY/64), 0);
@@ -269,6 +316,7 @@ function onLayerClick(event){
 					newPowerup.name = 'barricade';
 					newPowerup.getHit = function(damage){
 						this.uses -= damage;
+						sound.hurt.play();
 
 						if(this.uses < 1){
 							this.destroy();

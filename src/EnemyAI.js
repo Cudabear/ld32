@@ -30,15 +30,18 @@ EnemyAI = {
 			if(!boxExistsHere){
 	            if(tileIsOpen){
 	            	me.logic.myTile = destTile;
+	            	me.doWalk();
 
 		            if(destTile.x*64+32 < me.sprite.x){
 		                me.sprite.x -= me.vitals.speed;
+		                me.sprite.scale.x = -Math.abs(me.sprite.scale.x);
 
 		                if(destTile.x*64+32 > me.sprite.x){
 		                    me.sprite.x = destTile.x*64+32;
 		                }
 		            }else if(destTile.x*64+32 > me.sprite.x){
 		                me.sprite.x += me.vitals.speed;
+		                me.sprite.scale.x = Math.abs(me.sprite.scale.x);
 
 		                if(destTile.x*64+32 < me.sprite.x){
 		                    me.sprite.x = destTile.x*64+32;
